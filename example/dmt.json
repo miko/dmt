@@ -1,0 +1,16 @@
+[
+ {
+  "type": "mutation.rdf",
+  "filename": "001_upsert.rdf",
+  "filesum": "530dbe7ba34adc4e92eaea871e8df444",
+  "chainsum": "a658be28ad06cf3da328bee1a3e9f9f0",
+  "date": "2021-04-07T17:01:46.227657202+02:00"
+ },
+ {
+  "type": "schema.dql",
+  "filename": "002_schema.dql",
+  "filesum": "eeb8e20b4d58429542104a4663017049",
+  "chainsum": "8ac3b12ab56d38045c0f989b6c6a36cc",
+  "date": "2021-04-07T17:01:46.227657202+02:00"
+ }
+]
