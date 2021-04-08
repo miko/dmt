@@ -53,6 +53,7 @@ func UploadGraphqlSchema(url string) error {
 	endpoint := viper.GetString("graphql") + "/admin/schema"
 	count := 0
 	done := false
+	var err error
 	for {
 		count++
 		if count > 30 {
@@ -63,34 +64,32 @@ func UploadGraphqlSchema(url string) error {
 		if err != nil {
 			return err
 		}
-		resp, err := http.Post(endpoint, "application/json", f)
+		var resp *http.Response
+		resp, err = http.Post(endpoint, "application/json", f)
 		if err != nil {
-			//return err
 			continue
 		}
-		buf, err := ioutil.ReadAll(resp.Body)
+		var buf []byte
+		buf, err = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
-			//			return err
 			continue
 		}
 		var r schemaResponse
 		err = json.Unmarshal(buf, &r)
 		if err != nil {
-			//			return err
 			continue
 		}
 		if len(r.Errors) == 0 && r.Data.Code == "Success" {
 			done = true
 			break
-
 		}
 	}
 	if done {
 		fmt.Println("Uploaded schema")
 		return nil
 	} else {
-		return errors.New("Cannot upload schema")
+		return errors.New("Cannot upload schema, error: " + err.Error())
 	}
 }
 
@@ -98,13 +97,15 @@ func UploadGraphqlData(filename string) error {
 	endpoint := viper.GetString("graphql") + "/graphql"
 	count := 0
 	done := false
+	var err error
 	for {
 		count++
 		if count > 10 {
 			break
 		}
 		time.Sleep(time.Second)
-		b, err := GetContent(filename)
+		var b []byte
+		b, err = GetContent(filename)
 		if err != nil {
 			return err
 		}
@@ -125,6 +126,6 @@ func UploadGraphqlData(filename string) error {
 		fmt.Println("Uploaded data")
 		return nil
 	} else {
-		return errors.New("Cannot upload data")
+		return errors.New("Cannot upload data, error: " + err.Error())
 	}
 }
