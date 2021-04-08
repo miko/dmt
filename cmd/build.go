@@ -15,9 +15,10 @@ func init() {
 }
 
 var buildCmd = &cobra.Command{
-	Use:   "build directoryname",
-	Short: "Build DMT index for given local direcory",
-	Long:  `Build DMT index for given local direcory`,
+	Use:          "build directoryname",
+	Short:        "Build DMT index for given local direcory",
+	SilenceUsage: true,
+	Long:         `Build DMT index for given local direcory`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("requires a directory name")

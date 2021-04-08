@@ -12,22 +12,24 @@ func init() {
 }
 
 var initializeCmd = &cobra.Command{
-	Use:   "initialize",
-	Short: "Initialize database",
-	Long:  `Initialize database`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:          "initialize",
+	Short:        "Initialize database",
+	Long:         `Initialize database`,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		internal.GetIndexState()
 		data, err := internal.GetIndexState()
 		if err != nil {
 			//			log.Fatal(err)
 			fmt.Println(err)
-			return
+			return err
 		}
 		err = internal.InitializeDatabase(data.IndexFile, data.BaseDir)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		fmt.Println("Database initialized")
+		return nil
 	},
 }

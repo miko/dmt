@@ -11,11 +11,12 @@ func init() {
 }
 
 var verifyCmd = &cobra.Command{
-	Use:   "verify",
-	Short: "Verify migrations",
-	Long:  `Verify migrations`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:          "verify",
+	Short:        "Verify migrations",
+	Long:         `Verify migrations`,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("Not implemented")
-		return
+		return fmt.Errorf("Not implemented")
 	},
 }

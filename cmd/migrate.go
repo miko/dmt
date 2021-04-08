@@ -20,19 +20,20 @@ func init() {
 }
 
 var migrateCmd = &cobra.Command{
-	Use:   "migrate",
-	Short: "Print the migrate number of Hugo",
-	Long:  `All software has migrates. This is Hugo's`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:          "migrate",
+	Short:        "Migrate database to newer version",
+	Long:         `Migrate database to newer version`,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := internal.GetIndexState()
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		err = internal.VerifyIndexState(&data)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 		data2, err := internal.GetDatabaseState()
 		if err != nil {
@@ -40,7 +41,7 @@ var migrateCmd = &cobra.Command{
 			err = internal.InitializeDatabase(viper.GetString("index"), data.BaseDir)
 			if err != nil {
 				fmt.Println(err)
-				return
+				return err
 			}
 		}
 		if from == 0 {
@@ -48,29 +49,30 @@ var migrateCmd = &cobra.Command{
 		}
 		if from > 0 && from != data2.CurrentVersion {
 			fmt.Printf("Cannot migrate from %d, database at version %d\n", from, data2.CurrentVersion)
-			return
+			return fmt.Errorf("Cannot migrate from %d, database at version %d\n", from, data2.CurrentVersion)
 		}
 		if to == 0 {
 			to = len(data.Entries)
 		}
 		if to == from {
 			fmt.Printf("Cannot migrate, database already at version %d\n", data2.CurrentVersion)
-			return
+			return fmt.Errorf("Cannot migrate, database already at version %d\n", data2.CurrentVersion)
 		}
 		if to < from {
 			fmt.Printf("Cannot migrate to lower version %d - not yet supported, database now at version %d\n", to, data2.CurrentVersion)
-			return
+			return fmt.Errorf("Cannot migrate to lower version %d - not yet supported, database now at version %d\n", to, data2.CurrentVersion)
 		}
 		if to > len(data.Entries) {
 			fmt.Printf("Cannot migrate to version %d - know about %d versions\n", to, len(data.Entries))
-			return
+			return fmt.Errorf("Cannot migrate to version %d - know about %d versions\n", to, len(data.Entries))
 		}
 		for k := from + 1; k <= to; k++ {
 			err = internal.UpVersion(k, data.Entries[k-1])
 			if err != nil {
 				fmt.Printf("Cannot migrate: %s\n", err)
-				return
+				return fmt.Errorf("Cannot migrate: %s\n", err)
 			}
 		}
+		return nil
 	},
 }

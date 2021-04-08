@@ -76,19 +76,20 @@ func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState
 }
 
 var infoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "Migrations info",
-	Long:  `Migrations info`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:          "info",
+	Short:        "Migrations info",
+	Long:         `Migrations info`,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := internal.GetIndexState()
 		if err != nil {
 			fmt.Println(err)
-			//			return
+			return err
 		} else {
 			err = internal.VerifyIndexState(&data)
 			if err != nil {
 				fmt.Println(err)
-				return
+				return err
 			}
 		}
 		data2, err := internal.GetDatabaseState()
@@ -104,5 +105,6 @@ var infoCmd = &cobra.Command{
 		} else {
 			infoShowDatabaseInfo(data, data2)
 		}
+		return nil
 	},
 }

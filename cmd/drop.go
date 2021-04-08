@@ -12,9 +12,10 @@ func init() {
 }
 
 var dropCmd = &cobra.Command{
-	Use:   "drop",
-	Short: "Drop data",
-	Long:  `Drop data`,
+	Use:          "drop",
+	Short:        "Drop data",
+	Long:         `Drop data`,
+	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := internal.DropAll()
 		if err != nil {

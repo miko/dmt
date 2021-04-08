@@ -16,11 +16,13 @@ func init() {
 }
 
 var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Serving as web service",
-	Long:  `All software has serves. This is Hugo's`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:          "serve",
+	Short:        "Serving as web service",
+	Long:         `All software has serves. This is Hugo's`,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// fmt.Printf("Listening at port %d \n", port)
 		fmt.Println("Not implemented")
+		return fmt.Errorf("Not implemented")
 	},
 }
