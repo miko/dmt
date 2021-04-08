@@ -68,9 +68,15 @@ func NewClient() (*dgo.Dgraph, CancelFunc) {
 func GetDatabaseState() (ds DatabaseState, err error) {
 	dg, cancel := NewClient()
 	defer cancel()
-	resp, err := dg.NewTxn().Query(context.Background(), GET_STATE_QUERY)
+	return GetDatabaseStateForClient(dg)
+}
+
+func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
+	var resp *api.Response
+	resp, err = dg.NewTxn().Query(context.Background(), GET_STATE_QUERY)
 	if err != nil {
-		log.Fatal(err)
+		//		log.Fatal(err)
+		return
 	}
 	var rs struct {
 		GetState []struct {
@@ -80,20 +86,24 @@ func GetDatabaseState() (ds DatabaseState, err error) {
 	}
 	err = json.Unmarshal(resp.Json, &rs)
 	if err != nil {
-		log.Fatal(err)
+		//		log.Fatal(err)
+		return
 	}
 	if len(rs.GetState) > 0 {
-		decoded, err := base64.StdEncoding.DecodeString(rs.GetState[0].State)
+		var decoded []byte
+		decoded, err = base64.StdEncoding.DecodeString(rs.GetState[0].State)
 		err = json.Unmarshal(decoded, &ds)
 		if err != nil {
-			log.Println(err)
+			//			log.Println(err)
 			return ds, err
 		}
 		if ds.CurrentVersion != rs.GetState[0].Version {
-			log.Fatalf("State version %d does not match %d\n", ds.CurrentVersion, rs.GetState[0].Version)
+			err = fmt.Errorf("State version %d does not match %d\n", ds.CurrentVersion, rs.GetState[0].Version)
+			return
 		}
 	} else {
 		err = fmt.Errorf("Database not initialized")
+		return
 	}
 	return
 }

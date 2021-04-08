@@ -40,7 +40,6 @@ func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState
 		nextstate = "Future"
 	}
 	table := tablewriter.NewWriter(os.Stdout)
-	fmt.Printf("min=%d max=%d ver=%d\n", min, max, dbversion)
 	table.SetHeader([]string{"V#", "State", "Filename", "Executed on", "Check", "Description"})
 
 	for k := 0; k < min; k++ {
