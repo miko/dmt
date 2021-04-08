@@ -50,6 +50,10 @@ func NewClient() (*dgo.Dgraph, CancelFunc) {
 	addr := viper.GetString("dgraph")
 	// Dial a gRPC connection. The address to dial to can be configured when
 	// setting up the dgraph cluster.
+	verbose := viper.GetBool("verbose")
+	if verbose {
+		fmt.Printf("[info] Connecting to dgraph %s\n", addr)
+	}
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
@@ -156,71 +160,13 @@ func InitializeDatabase(index, basedir string) (err error) {
 	}
 	return err
 }
-func InitializeDatabase2(index, basedir string) (err error) {
-	dg, cancel := NewClient()
-	defer cancel()
-	qry := GET_STATE_QUERY_UPSERT
-	var mts []*api.Mutation
-	ds := &DatabaseState{CurrentVersion: 0, IndexLocation: index, BaseDir: basedir, Date: time.Now()}
-	str, _ := json.Marshal(ds)
-	encoded := base64.StdEncoding.EncodeToString(str)
-
-	mts = append(mts,
-		&api.Mutation{
-			SetJson: []byte(NewDqlMutation().
-				add("uid", "0x1").
-				add("dmt.version", 0).
-				add("dmt.state", encoded).
-				serialize()),
-			CommitNow: true,
-			Cond:      `@if(eq(len(ver),0))`,
-		})
-
-	/*
-		mu := &api.Mutation{
-				CommitNow: true,
-				SetJson:
-			}
-	*/
-	req := &api.Request{
-		CommitNow: true,
-		Query:     qry,
-		//RespFormat: api.Request_JSON,
-		Mutations: mts,
-	}
-	txn := dg.NewTxn()
-	//	fmt.Printf("CALLING: %#v\n", req.Mutations[0].)
-	var r *api.Response
-	r, err = txn.Do(context.Background(), req)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		var rs struct {
-			GetState []struct {
-				LenState []interface{} `json:"len_state"`
-			} `json:"getState"`
-		}
-		err = json.Unmarshal(r.Json, &rs)
-		if err != nil {
-			fmt.Printf("ERROR, JSON=%s\n", r.Json)
-			return
-		}
-		if len(rs.GetState) == 1 && len(rs.GetState[0].LenState) == 0 {
-			err = fmt.Errorf("Not initialized")
-			return
-		}
-		if len(rs.GetState) == 0 {
-			fmt.Println("Initialized database")
-		}
-
-	}
-	fmt.Printf("R=%s\n", r.Json)
-	return
-}
 
 func UpVersion(targetVersion int, se StateEntry) (err error) {
 	now := time.Now()
-	//fmt.Printf("UpV ver=%d now=%s type=%s\n", targetVersion, now, se.Type)
+	verbose := viper.GetBool("verbose")
+	if verbose {
+		fmt.Printf("[info] Upgrading version to %d - type %s\n", targetVersion, se.Type)
+	}
 	se.Date = &now
 	ds, err := GetDatabaseState()
 	if err != nil {
@@ -332,8 +278,10 @@ func UploadUpsertData(content, contenttype string) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(content)))
 
 	req.Header.Set("Content-Type", contenttype)
-	//	fmt.Println("mutation", url, contenttype)
-	//	fmt.Println(content)
+	verbose := viper.GetBool("verbose")
+	if verbose {
+		fmt.Printf("[info] Mutating to URL %s - type %s data:\n%s\n", url, contenttype, content)
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -345,6 +293,9 @@ func UploadUpsertData(content, contenttype string) ([]byte, error) {
 		return nil, fmt.Errorf("Server returned status %d", resp.Status)
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
+	if verbose {
+		fmt.Printf("[info] Got server answer:\n%s\n", body)
+	}
 	var r struct {
 		Errors []struct {
 			Message string `json:"message,omitempty"`

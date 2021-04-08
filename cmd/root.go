@@ -15,8 +15,9 @@ const (
 
 var (
 	// Used for flags.
-	dgraph string
-	index  string // index file/dir - json?
+	dgraph  string
+	index   string // index file/dir - json?
+	verbose bool
 
 	rootCmd = &cobra.Command{
 		Use:   "dmt",
@@ -51,6 +52,10 @@ func init() {
 	rootCmd.PersistentFlags().StringP("index", "i", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), "dmt.json"), "Migration index file")
 	viper.BindPFlag("index", rootCmd.PersistentFlags().Lookup("index"))
 	viper.SetDefault("index", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), "dmt.json"))
+
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose mode")
+	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	viper.SetDefault("verbose", false)
 
 }
 

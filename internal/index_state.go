@@ -14,9 +14,13 @@ import (
 
 func GetIndexState() (is IndexState, err error) {
 	var data []byte
+	verbose := viper.GetBool("verbose")
 	idx := viper.GetString("index")
 	is.BaseDir = filepath.Dir(idx)
 	is.IndexFile = filepath.Base(idx)
+	if verbose {
+		fmt.Printf("[info] Getting index from %s\n", idx)
+	}
 	fp, err := openuri.Open(idx)
 	if err != nil {
 		return
@@ -28,6 +32,9 @@ func GetIndexState() (is IndexState, err error) {
 	var states []StateEntry
 	err = json.Unmarshal(data, &states)
 	if err != nil {
+		if verbose {
+			fmt.Printf("[error] Cannot unmarshall data, error: %s for data:\n%s", err.Error(), data)
+		}
 		return
 	}
 	is.Entries = states
