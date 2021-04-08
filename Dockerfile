@@ -7,4 +7,3 @@ ENTRYPOINT /bin/dmt
 WORKDIR /dmt
 COPY example /dmt/example
 COPY --from=builder /go/bin/dmt /bin/dmt
-CMD "help"
