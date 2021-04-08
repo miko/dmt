@@ -22,7 +22,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "dmt",
 		Short: "DGraph migration tool",
-		Long:  `DGraph migration tool.`,
+		Long:  `DGraph migration tool v0.1.6.`,
 	}
 )
 
