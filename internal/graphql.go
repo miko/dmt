@@ -51,9 +51,11 @@ func dropData(endpoint string) error {
 
 func UploadGraphqlSchema(url string) error {
 	endpoint := viper.GetString("graphql") + "/admin/schema"
+	verbose := viper.GetBool("verbose")
 	count := 0
 	done := false
 	var err error
+	var buf []byte
 	for {
 		count++
 		if count > 30 {
@@ -67,22 +69,34 @@ func UploadGraphqlSchema(url string) error {
 		var resp *http.Response
 		resp, err = http.Post(endpoint, "application/json", f)
 		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step=%d] error=%s when POSTing schema\n", count, err.Error())
+			}
 			continue
 		}
-		var buf []byte
 		buf, err = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step=%d] error=%s when reading response:\n%s\n", count, err.Error(), buf)
+			}
 			continue
 		}
 		var r schemaResponse
 		err = json.Unmarshal(buf, &r)
 		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step=%d] error=%s when parsing response:\n%s\n", count, err.Error(), buf)
+			}
 			continue
 		}
 		if len(r.Errors) == 0 && r.Data.Code == "Success" {
 			done = true
 			break
+		} else {
+			if verbose {
+				fmt.Printf("[error] [step=%d] error=%s from server:\n%s\n", count, r.Errors[0].Message)
+			}
 		}
 	}
 	if done {
@@ -95,6 +109,7 @@ func UploadGraphqlSchema(url string) error {
 
 func UploadGraphqlData(filename string) error {
 	endpoint := viper.GetString("graphql") + "/graphql"
+	verbose := viper.GetBool("verbose")
 	count := 0
 	done := false
 	var err error
@@ -103,7 +118,6 @@ func UploadGraphqlData(filename string) error {
 		if count > 10 {
 			break
 		}
-		time.Sleep(time.Second)
 		var b []byte
 		b, err = GetContent(filename)
 		if err != nil {
@@ -116,6 +130,10 @@ func UploadGraphqlData(filename string) error {
 		var respData map[string]interface{}
 		err = client.Run(context.Background(), req, &respData)
 		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step=%d] error=%s for body:\n%s\n", count, err.Error())
+			}
+			time.Sleep(time.Second)
 			continue
 		}
 
