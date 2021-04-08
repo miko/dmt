@@ -124,6 +124,7 @@ func DropAll() error {
 }
 
 func InitializeDatabase(index, basedir string) (err error) {
+	verbose := viper.GetBool("verbose")
 	ds := &DatabaseState{CurrentVersion: 0, IndexLocation: index, BaseDir: basedir, Date: time.Now()}
 	str, _ := json.Marshal(ds)
 	encoded := base64.StdEncoding.EncodeToString(str)
@@ -150,6 +151,9 @@ func InitializeDatabase(index, basedir string) (err error) {
 				} `json:"q"`
 			} `json:"queries"`
 		} `json:"data"`
+	}
+	if verbose {
+		fmt.Printf("[info] Got server response:\n%s\n", body)
 	}
 	err = json.Unmarshal(body, &r)
 	if err != nil {
