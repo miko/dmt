@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"github.com/dgraph-io/dgo/v2"
+	"github.com/dgraph-io/dgo/v200"
 	"github.com/miko/dmt/internal"
 )
 

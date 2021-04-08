@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgraph-io/dgo/v2"
-	"github.com/dgraph-io/dgo/v2/protos/api"
+	"github.com/dgraph-io/dgo/v200"
+	"github.com/dgraph-io/dgo/v200/protos/api"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
