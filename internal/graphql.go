@@ -131,7 +131,7 @@ func UploadGraphqlData(filename string) error {
 		err = client.Run(context.Background(), req, &respData)
 		if err != nil {
 			if verbose {
-				fmt.Printf("[error] [step=%d] error=%s for body:\n%s\n", count, err.Error())
+				fmt.Printf("[error] [step=%d] error=%s\n", count, err.Error())
 			}
 			time.Sleep(time.Second)
 			continue
