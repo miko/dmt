@@ -55,8 +55,8 @@ var migrateCmd = &cobra.Command{
 			to = len(data.Entries)
 		}
 		if to == from {
-			fmt.Printf("Cannot migrate, database already at version %d\n", data2.CurrentVersion)
-			return fmt.Errorf("Cannot migrate, database already at version %d\n", data2.CurrentVersion)
+			fmt.Printf("Did not migrate, database already at version %d\n", data2.CurrentVersion)
+			return nil
 		}
 		if to < from {
 			fmt.Printf("Cannot migrate to lower version %d - not yet supported, database now at version %d\n", to, data2.CurrentVersion)
