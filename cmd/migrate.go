@@ -28,6 +28,9 @@ var migrateCmd = &cobra.Command{
 	Long:         `Migrate database to newer version`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if verbose {
+			fmt.Printf("[info] Started migrator %s\n", VER)
+		}
 		data, err := internal.GetIndexState()
 		if err != nil {
 			fmt.Println(err)

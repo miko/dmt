@@ -11,6 +11,7 @@ import (
 
 const (
 	envPrefix = "DMT"
+	VER       = "v0.1.17"
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "dmt",
 		Short: "DGraph migration tool",
-		Long:  `DGraph migration tool v0.1.16.`,
+		Long:  `DGraph migration tool ` + VER,
 	}
 )
 
