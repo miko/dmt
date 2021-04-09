@@ -28,9 +28,10 @@ var migrateCmd = &cobra.Command{
 	Long:         `Migrate database to newer version`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if verbose {
+    vrb:=viper.GetBool("verbose")
+		if vrb {
 			fmt.Printf("[info] Started migrator %s\n", VER)
-		}
+    }
 		data, err := internal.GetIndexState()
 		if err != nil {
 			fmt.Println(err)
@@ -47,7 +48,7 @@ var migrateCmd = &cobra.Command{
 			return err
 		}
 		if data2.CurrentVersion < 0 {
-			if verbose {
+			if vrb {
 				fmt.Printf("[warn] Database was not initialized, initializing now\n")
 			}
 			err = internal.InitializeDatabase(viper.GetString("index"), data.BaseDir)
