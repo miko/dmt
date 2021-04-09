@@ -52,6 +52,14 @@ var migrateCmd = &cobra.Command{
 				fmt.Println(err)
 				return err
 			}
+			data2, err = internal.GetDatabaseState()
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			if data2.CurrentVersion < 0 {
+				return fmt.Errorf("Could not initialize database\n")
+			}
 		}
 		if from == 0 {
 			from = data2.CurrentVersion
