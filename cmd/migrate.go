@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/miko/dmt/internal"
 	"github.com/spf13/cobra"
@@ -9,13 +10,15 @@ import (
 )
 
 var (
-	from int
-	to   int
+	from        int
+	to          int
+	successFile string
 )
 
 func init() {
 	migrateCmd.Flags().IntVarP(&from, "from", "f", 0, "From target")
 	migrateCmd.Flags().IntVarP(&to, "to", "t", 0, "To target")
+	migrateCmd.Flags().StringVarP(&successFile, "file", "s", "", "Touch this file in case of successful migration")
 	rootCmd.AddCommand(migrateCmd)
 }
 
@@ -38,6 +41,12 @@ var migrateCmd = &cobra.Command{
 		data2, err := internal.GetDatabaseState()
 		if err != nil {
 			fmt.Println(err)
+			return err
+		}
+		if data2.CurrentVersion < 0 {
+			if verbose {
+				fmt.Printf("[warn] Database was not initialized, initializing now\n")
+			}
 			err = internal.InitializeDatabase(viper.GetString("index"), data.BaseDir)
 			if err != nil {
 				fmt.Println(err)
@@ -72,6 +81,14 @@ var migrateCmd = &cobra.Command{
 				fmt.Printf("Cannot migrate: %s\n", err)
 				return fmt.Errorf("Cannot migrate: %s\n", err)
 			}
+		}
+		if successFile != "" {
+			f, err := os.Create(successFile)
+			if err != nil {
+				fmt.Printf("[error] cannot create file %s\n", successFile)
+				return err
+			}
+			f.Close()
 		}
 		return nil
 	},

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/dgraph-io/dgo/v200"
@@ -90,7 +91,6 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	}
 	err = json.Unmarshal(resp.Json, &rs)
 	if err != nil {
-		//		log.Fatal(err)
 		return
 	}
 	if len(rs.GetState) > 0 {
@@ -98,7 +98,6 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 		decoded, err = base64.StdEncoding.DecodeString(rs.GetState[0].State)
 		err = json.Unmarshal(decoded, &ds)
 		if err != nil {
-			//			log.Println(err)
 			return ds, err
 		}
 		if ds.CurrentVersion != rs.GetState[0].Version {
@@ -106,7 +105,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 			return
 		}
 	} else {
-		err = fmt.Errorf("Database not initialized")
+		ds.CurrentVersion = -1
 		return
 	}
 	return
@@ -213,9 +212,16 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 		fmt.Println(err)
 		return
 	} else {
+		dir := ds.BaseDir
+		if fdir := viper.GetString("index"); fdir != "" {
+			dir = filepath.Dir(fdir)
+		}
+		if verbose {
+			fmt.Printf("[info] dir set to %s\n", dir)
+		}
 		switch se.Type {
 		case "schema.graphql":
-			err = UploadGraphqlSchema(ds.BaseDir + "/" + se.Filename)
+			err = UploadGraphqlSchema(dir + "/" + se.Filename)
 			if err != nil {
 				fmt.Print(err)
 				return
@@ -223,7 +229,7 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 			break
 
 		case "schema.dql":
-			err = UploadDqlSchema(ds.BaseDir + "/" + se.Filename)
+			err = UploadDqlSchema(dir + "/" + se.Filename)
 			if err != nil {
 				fmt.Print(err)
 				return err
@@ -231,7 +237,7 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 			break
 
 		case "data.graphql":
-			err = UploadGraphqlData(ds.BaseDir + "/" + se.Filename)
+			err = UploadGraphqlData(dir + "/" + se.Filename)
 			if err != nil {
 				fmt.Print(err)
 				return err
@@ -240,14 +246,14 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 			break
 
 		case "mutation.rdf":
-			_, err = UploadUpsert(ds.BaseDir+"/"+se.Filename, "application/rdf")
+			_, err = UploadUpsert(dir+"/"+se.Filename, "application/rdf")
 			if err != nil {
 				fmt.Print(err)
 				return err
 			}
 			break
 		case "mutation.json":
-			_, err = UploadUpsert(ds.BaseDir+"/"+se.Filename, "application/json")
+			_, err = UploadUpsert(dir+"/"+se.Filename, "application/json")
 			if err != nil {
 				fmt.Print(err)
 				return err
