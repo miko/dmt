@@ -89,6 +89,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 		//		log.Fatal(err)
 		return
 	}
+	fmt.Printf("[debug] JSON response: %s\n", string(resp.Json))
 	var rs struct {
 		GetState []struct {
 			Version int    `json:"version,omitempty"`
