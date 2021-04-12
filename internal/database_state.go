@@ -77,6 +77,12 @@ func GetDatabaseState() (ds DatabaseState, err error) {
 }
 
 func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
+	verbose := viper.GetBool("verbose")
+	if verbose {
+		defer func() {
+			fmt.Printf("[debug] Database version: %d error=%s\n", ds.CurrentVersion, err)
+		}()
+	}
 	var resp *api.Response
 	resp, err = dg.NewTxn().Query(context.Background(), GET_STATE_QUERY)
 	if err != nil {
