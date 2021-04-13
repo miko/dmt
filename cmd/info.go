@@ -21,10 +21,14 @@ func init() {
 func infoShowDatabaseMetaInfo(data2 internal.DatabaseState) {
 	dbversion := data2.CurrentVersion
 	fmt.Println("Database info:")
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Version", "Index", "BaseDir", "Date", "Dgraph"})
-	table.Append([]string{fmt.Sprintf("%d", dbversion), data2.IndexLocation, data2.BaseDir, data2.Date.Format(time.RFC3339), viper.GetString("dgraph")})
-	table.Render()
+	if dbversion < 0 {
+		fmt.Println("Database not initialized!")
+	} else {
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Version", "Index", "BaseDir", "Date", "Dgraph"})
+		table.Append([]string{fmt.Sprintf("%d", dbversion), data2.IndexLocation, data2.BaseDir, data2.Date.Format(time.RFC3339), viper.GetString("dgraph")})
+		table.Render()
+	}
 }
 
 func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState) {
@@ -38,6 +42,10 @@ func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState
 		min = len(data.Entries)
 		L = data2.Entries
 		nextstate = "Future"
+	}
+	if max == 0 {
+		fmt.Println("No index file found! Use dmt build to build one, reference it with -i flag.")
+		return
 	}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"V#", "State", "Filename", "Executed on", "Check", "Description"})
@@ -67,10 +75,13 @@ func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState
 		table.Append([]string{fmt.Sprintf("%d", k+1), state, v.Filename, date, check, desc})
 	}
 
-	//	for k := len(data.Entries); k < dbversion; k++ {
 	for k := min; k < max; k++ {
 		v := L[k]
-		table.Append([]string{fmt.Sprintf("%d", k+1), nextstate, v.Filename, "-", v.Description})
+		date := "-"
+		if &L[k].Date != nil && !L[k].Date.IsZero() {
+			date = L[k].Date.Format(time.RFC3339)
+		}
+		table.Append([]string{fmt.Sprintf("%d", k+1), nextstate, v.Filename, date, v.Description})
 	}
 	table.Render()
 }
@@ -84,12 +95,10 @@ var infoCmd = &cobra.Command{
 		data, err := internal.GetIndexState()
 		if err != nil {
 			fmt.Println(err)
-			return err
 		} else {
 			err = internal.VerifyIndexState(&data)
 			if err != nil {
 				fmt.Println(err)
-				return err
 			}
 		}
 		data2, err := internal.GetDatabaseState()
