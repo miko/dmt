@@ -25,8 +25,8 @@ func infoShowDatabaseMetaInfo(data2 internal.DatabaseState) {
 		fmt.Println("Database not initialized!")
 	} else {
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Version", "Index", "BaseDir", "Date", "Dgraph"})
-		table.Append([]string{fmt.Sprintf("%d", dbversion), data2.IndexLocation, data2.BaseDir, data2.Date.Format(time.RFC3339), viper.GetString("dgraph")})
+		table.SetHeader([]string{"Version", "Index", "Date", "Dgraph"})
+		table.Append([]string{fmt.Sprintf("%d", dbversion), data2.IndexLocation, data2.Date.Format(time.RFC3339), viper.GetString("dgraph")})
 		table.Render()
 	}
 }
@@ -81,7 +81,7 @@ func infoShowDatabaseInfo(data internal.IndexState, data2 internal.DatabaseState
 		if &L[k].Date != nil && !L[k].Date.IsZero() {
 			date = L[k].Date.Format(time.RFC3339)
 		}
-		table.Append([]string{fmt.Sprintf("%d", k+1), nextstate, v.Filename, date, v.Description})
+		table.Append([]string{fmt.Sprintf("%d", k+1), nextstate, v.Filename, date, "", v.Description})
 	}
 	table.Render()
 }
@@ -92,7 +92,16 @@ var infoCmd = &cobra.Command{
 	Long:         `Migrations info`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, err := internal.GetIndexState()
+		data2, err := internal.GetDatabaseState()
+		if err != nil {
+			fmt.Println("Database not initialized!")
+		} else {
+			infoShowDatabaseMetaInfo(data2)
+		}
+
+		fmt.Println()
+
+		data, err := internal.GetIndexState(data2.IndexLocation)
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -101,13 +110,7 @@ var infoCmd = &cobra.Command{
 				fmt.Println(err)
 			}
 		}
-		data2, err := internal.GetDatabaseState()
-		if err != nil {
-			fmt.Println("Database not initialized!")
-		} else {
-			infoShowDatabaseMetaInfo(data2)
-		}
-		fmt.Println()
+
 		if detailed {
 			//			infoShowDatabaseLongInfo(data, data2)
 			infoShowDatabaseInfo(data, data2)

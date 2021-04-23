@@ -9,7 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"path/filepath"
+
+	//"path/filepath"
 	"time"
 
 	"github.com/dgraph-io/dgo/v200"
@@ -80,7 +81,9 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	verbose := viper.GetBool("verbose")
 	if verbose {
 		defer func() {
-			fmt.Printf("[debug] Database version: %d error=%s\n", ds.CurrentVersion, err)
+			if err != nil {
+				fmt.Printf("[debug] Database version: %d error=%s\n", ds.CurrentVersion, err.Error())
+			}
 		}()
 	}
 	var resp *api.Response
@@ -89,7 +92,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 		//		log.Fatal(err)
 		return
 	}
-	fmt.Printf("[debug] JSON response: %s\n", string(resp.Json))
+	//fmt.Printf("[debug] JSON response: %s\n", string(resp.Json))
 	var rs struct {
 		GetState []struct {
 			Version int    `json:"version,omitempty"`
@@ -129,9 +132,9 @@ func DropAll() error {
 	return nil
 }
 
-func InitializeDatabase(index, basedir string) (err error) {
+func InitializeDatabase(index string) (err error) {
 	verbose := viper.GetBool("verbose")
-	ds := &DatabaseState{CurrentVersion: 0, IndexLocation: index, BaseDir: basedir, Date: time.Now()}
+	ds := &DatabaseState{CurrentVersion: 0, IndexLocation: index, Date: time.Now()}
 	str, _ := json.Marshal(ds)
 	encoded := base64.StdEncoding.EncodeToString(str)
 	body, err := UploadUpsertData(fmt.Sprintf(`upsert {
@@ -219,9 +222,9 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 		fmt.Println(err)
 		return
 	} else {
-		dir := ds.BaseDir
+		dir, _ := SplitIndex(ds.IndexLocation)
 		if fdir := viper.GetString("index"); fdir != "" {
-			dir = filepath.Dir(fdir)
+			dir, _ = SplitIndex(fdir)
 		}
 		if verbose {
 			fmt.Printf("[info] dir set to %s\n", dir)

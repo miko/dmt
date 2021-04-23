@@ -6,18 +6,50 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"path/filepath"
 
 	"github.com/spf13/viper"
 	"github.com/utahta/go-openuri"
 )
 
-func GetIndexState() (is IndexState, err error) {
+func SplitIndex(s string) (dir, filename string) {
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+	if u.Host != "" {
+		u.Path = filepath.Dir(u.Path)
+		dir = u.String()
+	} else {
+		dir = filepath.Dir(s)
+	}
+	filename = filepath.Base(s)
+	return
+}
+
+func GetIndexState(indexfile string) (is IndexState, err error) {
 	var data []byte
 	verbose := viper.GetBool("verbose")
 	idx := viper.GetString("index")
-	is.BaseDir = filepath.Dir(idx)
-	is.IndexFile = filepath.Base(idx)
+	if idx == "" {
+		idx = indexfile
+		if idx == "" {
+			idx = "_dmt.json"
+			if verbose {
+				fmt.Println("[info] using default index file")
+			}
+		} else {
+			if verbose {
+				fmt.Println("[info] using index file from database")
+			}
+		}
+	} else {
+		if verbose {
+			fmt.Println("[info] using index file from command line")
+		}
+	}
+	is.IndexFile = idx
 	if verbose {
 		fmt.Printf("[info] Getting index from %s\n", idx)
 	}
@@ -78,14 +110,19 @@ func GetMD5(url string) (sum string, err error) {
 }
 
 func VerifyIndexState(is *IndexState) (err error) {
+	verbose := viper.GetBool("verbose")
+	basedir, _ := SplitIndex(is.IndexFile)
 	for k, v := range is.Entries {
 
 		if v.Filename != "" {
-			data, err := GetContent(is.BaseDir + "/" + v.Filename)
+			if verbose {
+				fmt.Printf("[info] Getting file %s/%s\n", basedir, v.Filename)
+			}
+			data, err := GetContent(basedir + "/" + v.Filename)
 			if err != nil {
 				return err
 			}
-			sum, err := GetMD5(is.BaseDir + "/" + v.Filename)
+			sum, err := GetMD5(basedir + "/" + v.Filename)
 			if v.MD5SUM != "" && v.MD5SUM != sum {
 				return fmt.Errorf("Bad MD5 sum for file %s", v.Filename)
 			}

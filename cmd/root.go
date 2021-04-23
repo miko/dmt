@@ -11,7 +11,7 @@ import (
 
 const (
 	envPrefix = "DMT"
-	VER       = "v0.1.23"
+	VER       = "v0.2.0"
 )
 
 var (
@@ -50,9 +50,9 @@ func init() {
 	viper.BindPFlag("graphql", rootCmd.PersistentFlags().Lookup("graphql"))
 	viper.SetDefault("graphql", internal.OrDefault(os.Getenv(envPrefix+"_GRAPHQL"), "http://dgraph:8080"))
 
-	rootCmd.PersistentFlags().StringP("index", "i", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), "dmt.json"), "Migration index file")
+	rootCmd.PersistentFlags().StringP("index", "i", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), ""), "Migration index file")
 	viper.BindPFlag("index", rootCmd.PersistentFlags().Lookup("index"))
-	viper.SetDefault("index", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), "dmt.json"))
+	viper.SetDefault("index", internal.OrDefault(os.Getenv(envPrefix+"_INDEX"), ""))
 
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose mode")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))

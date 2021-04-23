@@ -28,19 +28,9 @@ var migrateCmd = &cobra.Command{
 	Long:         `Migrate database to newer version`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-    vrb:=viper.GetBool("verbose")
+		vrb := viper.GetBool("verbose")
 		if vrb {
 			fmt.Printf("[info] Started migrator %s\n", VER)
-    }
-		data, err := internal.GetIndexState()
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		err = internal.VerifyIndexState(&data)
-		if err != nil {
-			fmt.Println(err)
-			return err
 		}
 		data2, err := internal.GetDatabaseState()
 		if err != nil {
@@ -51,7 +41,7 @@ var migrateCmd = &cobra.Command{
 			if vrb {
 				fmt.Printf("[warn] Database was not initialized, initializing now\n")
 			}
-			err = internal.InitializeDatabase(viper.GetString("index"), data.BaseDir)
+			err = internal.InitializeDatabase(viper.GetString("index"))
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -64,6 +54,16 @@ var migrateCmd = &cobra.Command{
 			if data2.CurrentVersion < 0 {
 				return fmt.Errorf("Could not initialize database\n")
 			}
+		}
+		data, err := internal.GetIndexState(data2.IndexLocation)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		err = internal.VerifyIndexState(&data)
+		if err != nil {
+			fmt.Println(err)
+			return err
 		}
 		if from == 0 {
 			from = data2.CurrentVersion

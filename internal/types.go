@@ -15,14 +15,12 @@ type StateEntry struct {
 
 type DatabaseState struct {
 	IndexLocation  string       `json:"index"`
-	BaseDir        string       `json:"basedir"`
 	Date           time.Time    `json:"date"`
 	CurrentVersion int          `json:"version"`
 	Entries        []StateEntry `json:"entries"`
 }
 
 type IndexState struct {
-	BaseDir   string       `json:"basedir"`
 	IndexFile string       `json:"indexfile"`
 	Entries   []StateEntry `json:"entries"`
 }

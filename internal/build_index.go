@@ -16,8 +16,10 @@ func BuildIndex(dir string) error {
 	}
 
 	var is IndexState
-	indexFile := "dmt.json"
-	is.BaseDir = dir
+	indexFile := "_dmt.json"
+	if dir != "" && dir != "." {
+		indexFile = dir + "/" + indexFile
+	}
 	is.IndexFile = indexFile
 	now := time.Now()
 	_ = now
@@ -33,7 +35,7 @@ func BuildIndex(dir string) error {
 		ftype := ""
 
 		switch {
-		case fname == "dmt.json":
+		case fname == "_dmt.json":
 			break
 		case len(fname) >= 14 && fname[len(fname)-14:] == "schema.graphql":
 			ftype = "schema.graphql"

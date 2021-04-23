@@ -17,14 +17,13 @@ var initializeCmd = &cobra.Command{
 	Long:         `Initialize database`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		internal.GetIndexState()
-		data, err := internal.GetIndexState()
+		data, err := internal.GetIndexState("")
 		if err != nil {
 			//			log.Fatal(err)
 			fmt.Println(err)
 			return err
 		}
-		err = internal.InitializeDatabase(data.IndexFile, data.BaseDir)
+		err = internal.InitializeDatabase(data.IndexFile)
 		if err != nil {
 			fmt.Println(err)
 			return err
