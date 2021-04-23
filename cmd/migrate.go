@@ -41,7 +41,11 @@ var migrateCmd = &cobra.Command{
 			if vrb {
 				fmt.Printf("[warn] Database was not initialized, initializing now\n")
 			}
-			err = internal.InitializeDatabase(viper.GetString("index"))
+			idx := viper.GetString("index")
+			if idx == "" {
+				idx = "_dmt.json"
+			}
+			err = internal.InitializeDatabase(idx)
 			if err != nil {
 				fmt.Println(err)
 				return err
