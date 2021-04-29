@@ -137,40 +137,95 @@ func InitializeDatabase(index string) (err error) {
 	ds := &DatabaseState{CurrentVersion: 0, IndexLocation: index, Date: time.Now()}
 	str, _ := json.Marshal(ds)
 	encoded := base64.StdEncoding.EncodeToString(str)
+	done := false
+	type res_type struct {
+		Data struct {
+			Queries struct {
+				HasInitialized []struct {
+					Version     int  `json:"version,omitempty"`
+					Initialized bool `json:"initialized,omitempty"`
+				} `json:"has_initialized"`
+			} `json:"queries"`
+		} `json:"data"`
+	}
+
+	for count := 1; count < 6; count++ {
+		time.Sleep(time.Second)
+		var res res_type
+		body, err := UploadUpsertData(`upsert {
+  query {
+    has_initialized(func: has(dmt.initialized) ) {
+      has_initialized as uid
+      initialized: dmt.initialized
+      version: dmt.version
+    }
+  }
+
+  mutation @if(eq(len(has_initialized),0) ) {
+    set {
+      <0x1> <dmt.initialized> "false"^^<xs:boolean> .
+    }
+  }
+}`, "application/rdf")
+		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
+			}
+			continue
+		}
+		err = json.Unmarshal(body, &res)
+		if err != nil {
+			if verbose {
+				fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
+			}
+			continue
+		}
+		if len(res.Data.Queries.HasInitialized) == 0 {
+			if verbose {
+				fmt.Printf("[warn] [step %d] Got no database initialization info\n", count)
+			}
+			continue
+		} else {
+			if verbose {
+				fmt.Printf("[info] [step %d] Got initialization data\n", count)
+			}
+			if res.Data.Queries.HasInitialized[0].Initialized == true {
+				if verbose {
+					fmt.Printf("[info] [step %d] Database already initialized at version %d\n", count, res.Data.Queries.HasInitialized[0].Version)
+				}
+				return fmt.Errorf("Database already initialized at version %d", res.Data.Queries.HasInitialized[0].Version)
+			}
+			done = true
+			break
+		}
+	}
+	if !done {
+		return fmt.Errorf("Cannot initialize database")
+	}
 	body, err := UploadUpsertData(fmt.Sprintf(`upsert {
   query {
     q(func: has(dmt.version)) {
       uid
       ver as version: dmt.version
+      initialized: dmt.initialized
     }
   }
 
-  mutation @if(eq(len(ver),0)) {
+  mutation @if( eq(len(ver),0) ) {
     set {
+      <0x1> <dmt.initialized> "true"^^<xs:boolean> .
       <0x1> <dmt.version> "0"^^<xs:int> .
       <0x1> <dmt.state> "%s" .
     }
   }
 }`, encoded), "application/rdf")
-	var r struct {
-		Data struct {
-			Queries struct {
-				Q []struct {
-					Version int `json:"version"`
-				} `json:"q"`
-			} `json:"queries"`
-		} `json:"data"`
-	}
-	if verbose {
-		fmt.Printf("[info] Got server response:\n%s\n", body)
-	}
-	err = json.Unmarshal(body, &r)
+
+	var res res_type
+	err = json.Unmarshal(body, &res)
 	if err != nil {
 		return err
 	}
-	if len(r.Data.Queries.Q) > 0 {
-		return fmt.Errorf("Databse already initialized at version %d", r.Data.Queries.Q[0].Version)
-	}
+
 	return err
 }
 

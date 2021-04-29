@@ -11,7 +11,7 @@ import (
 
 const (
 	envPrefix = "DMT"
-	VER       = "v0.2.1"
+	VER       = "v0.2.2"
 )
 
 var (

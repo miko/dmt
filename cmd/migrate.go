@@ -13,12 +13,14 @@ var (
 	from        int
 	to          int
 	successFile string
+	forceDrop   bool
 )
 
 func init() {
 	migrateCmd.Flags().IntVarP(&from, "from", "f", 0, "From target")
 	migrateCmd.Flags().IntVarP(&to, "to", "t", 0, "To target")
 	migrateCmd.Flags().StringVarP(&successFile, "file", "s", "", "Touch this file in case of successful migration")
+	migrateCmd.Flags().BoolVarP(&forceDrop, "force-drop", "x", false, "Force drop all database data before migration")
 	rootCmd.AddCommand(migrateCmd)
 }
 
@@ -32,18 +34,39 @@ var migrateCmd = &cobra.Command{
 		if vrb {
 			fmt.Printf("[info] Started migrator %s\n", VER)
 		}
+
+		idx := viper.GetString("index")
+		if idx == "" {
+			idx = "_dmt.json"
+		}
+
 		data2, err := internal.GetDatabaseState()
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
+
+		if forceDrop {
+			if vrb {
+				fmt.Printf("[warn] Dropping all data before migration - version was at %d", data2.CurrentVersion)
+			}
+			err = internal.DropAll()
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			// FIXME TODO - wait for db response
+
+			data2, err = internal.GetDatabaseState()
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+
 		if data2.CurrentVersion < 0 {
 			if vrb {
 				fmt.Printf("[warn] Database was not initialized, initializing now\n")
-			}
-			idx := viper.GetString("index")
-			if idx == "" {
-				idx = "_dmt.json"
 			}
 			err = internal.InitializeDatabase(idx)
 			if err != nil {
@@ -57,6 +80,9 @@ var migrateCmd = &cobra.Command{
 			}
 			if data2.CurrentVersion < 0 {
 				return fmt.Errorf("Could not initialize database\n")
+			}
+			if vrb {
+				fmt.Printf("[info] Database initialized with index %s\n", idx)
 			}
 		}
 		data, err := internal.GetIndexState(data2.IndexLocation)
