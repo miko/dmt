@@ -183,7 +183,7 @@ func InitializeDatabase(index string) (err error) {
 
   mutation @if(eq(len(has_initialized),0) ) {
     set {
-      <:_blank> <dmt.initialized> "false"^^<xs:boolean> .
+      <_:blank> <dmt.initialized> "false"^^<xs:boolean> .
     }
   }
 }`, "application/rdf")
