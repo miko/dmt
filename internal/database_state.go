@@ -171,7 +171,31 @@ func InitializeDatabase(index string) (err error) {
 			if verbose {
 				fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
 			}
-			continue
+			if err.Error() == "Uid: [1] cannot be greater than lease: [0]" {
+				body, err = UploadUpsertData(`upsert {
+  query {
+    has_initialized(func: has(dmt.initialized) ) {
+      has_initialized as uid
+      initialized: dmt.initialized
+      version: dmt.version
+    }
+  }
+
+  mutation @if(eq(len(has_initialized),0) ) {
+    set {
+      <0x1> <dmt.initialized> "false"^^<xs:boolean> .
+    }
+  }
+}`, "application/rdf")
+				if err != nil {
+					if verbose {
+						fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
+					}
+					continue
+				}
+			} else {
+				continue
+			}
 		}
 		err = json.Unmarshal(body, &res)
 		if err != nil {
@@ -346,6 +370,81 @@ func UploadUpsert(filename, contenttype string) ([]byte, error) {
 		return nil, err
 	}
 	return UploadUpsertData(string(data), contenttype)
+}
+
+func ExportData() ([]byte, error) {
+	url := viper.GetString("graphql") + "/admin?commitNow=true"
+	export_url := viper.GetString("export_url")
+	export_access_key := viper.GetString("export_access_key")
+	export_secret_key := viper.GetString("export_secret_key")
+	if export_url == "" {
+		return nil, fmt.Errorf("No export URL")
+	}
+	if export_access_key == "" {
+		return nil, fmt.Errorf("No export_access_key")
+	}
+	if export_secret_key == "" {
+		return nil, fmt.Errorf("No export_secret_key")
+	}
+	verbose := viper.GetBool("verbose")
+
+	var jsonStr = fmt.Sprintf(`
+mutation {
+  export(input: {
+    destination: "%s"
+    accessKey: "%s"
+    secretKey: "%s"
+  }) {
+    response {
+      message
+      code
+    }
+  }
+}
+`, export_url, export_access_key, export_secret_key)
+	if verbose {
+		fmt.Printf("[info] Exporting dgraph data to URL %s\n", export_url)
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jsonStr)))
+	req.Header.Set("Content-Type", "application/graphql")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if verbose {
+		fmt.Println("[info] Server response status:", resp.Status)
+	}
+	if resp.Status != "200 OK" {
+		return nil, fmt.Errorf("Server returned status %d", resp.Status)
+	}
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	if verbose {
+		fmt.Printf("[info] Got server answer:\n%s\n", body)
+	}
+	var r struct {
+		Data struct {
+			Export struct {
+				Response struct {
+					Message string `json:"message,omitempty"`
+					Code    string `json:"code,omitempty"`
+				} `json:"response,omitempty"`
+			} `json:"export,omitempty"`
+		} `json:"data,omitempty"`
+	}
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, err
+	}
+	if r.Data.Export.Response.Code != "Success" {
+		return nil, fmt.Errorf("%s", r.Data.Export.Response.Message)
+	}
+	return body, nil
 }
 
 func UploadUpsertData(content, contenttype string) ([]byte, error) {

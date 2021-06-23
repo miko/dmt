@@ -11,7 +11,7 @@ import (
 
 const (
 	envPrefix = "DMT"
-	VER       = "v0.2.3"
+	VER       = "v0.2.4"
 )
 
 var (
@@ -57,6 +57,18 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose mode")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	viper.SetDefault("verbose", false)
+
+	rootCmd.PersistentFlags().StringP("export_url", "u", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_URL"), ""), "Export URL (S3)")
+	viper.BindPFlag("export_url", rootCmd.PersistentFlags().Lookup("export_url"))
+	viper.SetDefault("export_url", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_URL"), ""))
+
+	rootCmd.PersistentFlags().StringP("export_access_key", "a", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_ACCESS_KEY"), ""), "Export AccessKey (S3)")
+	viper.BindPFlag("export_access_key", rootCmd.PersistentFlags().Lookup("export_access_key"))
+	viper.SetDefault("export_access_key", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_ACCESS_KEY"), ""))
+
+	rootCmd.PersistentFlags().StringP("export_secret_key", "k", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_SECRET_KEY"), ""), "Export SecretKey (S3)")
+	viper.BindPFlag("export_secret_key", rootCmd.PersistentFlags().Lookup("export_secret_key"))
+	viper.SetDefault("export_secret_key", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_SECRET_KEY"), ""))
 
 }
 
