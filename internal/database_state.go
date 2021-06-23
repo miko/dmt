@@ -168,10 +168,10 @@ func InitializeDatabase(index string) (err error) {
   }
 }`, "application/rdf")
 		if err != nil {
-			if verbose {
-				fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
-			}
 			if err.Error() == "Uid: [1] cannot be greater than lease: [0]" {
+				if verbose {
+					fmt.Printf("[warn] [step %d] DB not initialized - creating first record\n", count)
+				}
 				body, err = UploadUpsertData(`upsert {
   query {
     has_initialized(func: has(dmt.initialized) ) {
@@ -183,7 +183,7 @@ func InitializeDatabase(index string) (err error) {
 
   mutation @if(eq(len(has_initialized),0) ) {
     set {
-      <0x1> <dmt.initialized> "false"^^<xs:boolean> .
+      <:_blank> <dmt.initialized> "false"^^<xs:boolean> .
     }
   }
 }`, "application/rdf")
@@ -194,6 +194,9 @@ func InitializeDatabase(index string) (err error) {
 					continue
 				}
 			} else {
+				if verbose {
+					fmt.Printf("[error] [step %d] Got error: %s\n", count, err.Error())
+				}
 				continue
 			}
 		}
