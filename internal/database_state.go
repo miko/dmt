@@ -256,6 +256,76 @@ func InitializeDatabase(index string) (err error) {
 	return err
 }
 
+func ProcessFile(filename, filetype string) (err error) {
+	switch filetype {
+
+	case "schema.graphql":
+		err = UploadGraphqlSchema(filename)
+		break
+
+	case "schema.dql":
+		err = UploadDqlSchema(filename)
+		break
+
+	case "data.graphql":
+		err = UploadGraphqlData(filename)
+		break
+
+	case "mutation.rdf":
+		type response struct {
+			Data struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+				Queries struct {
+					Processed []struct {
+						Count int `json:"count"`
+					} `json:"processed"`
+				} `json:"queries`
+			} `json:"data"`
+		}
+		var done bool
+		var steps int
+		verbose := viper.GetBool("verbose")
+		for {
+			steps++
+			data, err := UploadUpsert(filename, "application/rdf")
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			var r response
+			err = json.Unmarshal(data, &r)
+			if err != nil {
+				fmt.Println(err)
+				done = true
+			} else {
+				if r.Data.Queries.Processed != nil && len(r.Data.Queries.Processed) == 1 && r.Data.Queries.Processed[0].Count == 0 {
+					done = true
+				}
+				if r.Data.Queries.Processed == nil || len(r.Data.Queries.Processed) != 1 {
+					done = true
+				}
+			}
+			if verbose {
+				fmt.Printf("Step %d upsert executed.\n", steps)
+			}
+			if done {
+				break
+			}
+		}
+		fmt.Printf("Upsert executed in %d steps.\n", steps)
+		break
+	case "mutation.json":
+		_, err = UploadUpsert(filename, "application/json")
+		break
+
+	default:
+		fmt.Printf("Skipping file %s of type %s\n", filename, filetype)
+		return
+	}
+	return
+}
+
 func UpVersion(targetVersion int, se StateEntry) (err error) {
 	now := time.Now()
 	verbose := viper.GetBool("verbose")
@@ -311,51 +381,12 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 		if verbose {
 			fmt.Printf("[info] dir set to %s\n", dir)
 		}
-		switch se.Type {
-		case "schema.graphql":
-			err = UploadGraphqlSchema(dir + "/" + se.Filename)
-			if err != nil {
-				fmt.Print(err)
-				return
-			}
-			break
-
-		case "schema.dql":
-			err = UploadDqlSchema(dir + "/" + se.Filename)
-			if err != nil {
-				fmt.Print(err)
-				return err
-			}
-			break
-
-		case "data.graphql":
-			err = UploadGraphqlData(dir + "/" + se.Filename)
-			if err != nil {
-				fmt.Print(err)
-				return err
-			}
-
-			break
-
-		case "mutation.rdf":
-			_, err = UploadUpsert(dir+"/"+se.Filename, "application/rdf")
-			if err != nil {
-				fmt.Print(err)
-				return err
-			}
-			break
-		case "mutation.json":
-			_, err = UploadUpsert(dir+"/"+se.Filename, "application/json")
-			if err != nil {
-				fmt.Print(err)
-				return err
-			}
-			break
-
-		default:
-			fmt.Printf("Skipping file %s of type %s\n", se.Filename, se.Type)
-			return
+		err = ProcessFile(dir+"/"+se.Filename, se.Type)
+		if err != nil {
+			fmt.Print(err)
+			return err
 		}
+
 		err = txn.Commit(context.Background())
 		if err != nil {
 			fmt.Println(err)

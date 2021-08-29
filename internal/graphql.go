@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/seatgeek/graphql"
@@ -109,6 +110,7 @@ func UploadGraphqlSchema(url string) error {
 
 func UploadGraphqlData(filename string) error {
 	endpoint := viper.GetString("graphql") + "/graphql"
+	header := viper.GetString("header")
 	verbose := viper.GetBool("verbose")
 	count := 0
 	done := false
@@ -127,6 +129,15 @@ func UploadGraphqlData(filename string) error {
 
 		req := graphql.NewRequest(string(b))
 		req.Header.Set("Cache-Control", "no-cache")
+		if header != "" {
+			th := strings.Split(header, "=")
+			if verbose {
+				fmt.Printf("Using header: %s: %s (%d)\n", th[0], th[1], len(th))
+			}
+			req.Header.Set(th[0], th[1])
+		} else {
+			fmt.Println("Skipping header")
+		}
 		var respData map[string]interface{}
 		err = client.Run(context.Background(), req, &respData)
 		if err != nil {

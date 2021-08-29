@@ -13,6 +13,7 @@ var (
 	from        int
 	to          int
 	successFile string
+	header      string
 	forceDrop   bool
 )
 

@@ -11,7 +11,7 @@ import (
 
 const (
 	envPrefix = "DMT"
-	VER       = "v0.2.10"
+	VER       = "v0.2.11"
 )
 
 var (
@@ -69,6 +69,10 @@ func init() {
 	rootCmd.PersistentFlags().StringP("export_secret_key", "k", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_SECRET_KEY"), ""), "Export SecretKey (S3)")
 	viper.BindPFlag("export_secret_key", rootCmd.PersistentFlags().Lookup("export_secret_key"))
 	viper.SetDefault("export_secret_key", internal.OrDefault(os.Getenv(envPrefix+"_EXPORT_SECRET_KEY"), ""))
+
+	rootCmd.PersistentFlags().StringP("header", "H", internal.OrDefault(os.Getenv(envPrefix+"_HEADER"), ""), "Additional HTTP header for graphql data - in form of k=v")
+	viper.BindPFlag("header", rootCmd.PersistentFlags().Lookup("header"))
+	viper.SetDefault("header", internal.OrDefault(os.Getenv(envPrefix+"_HEADER"), ""))
 
 }
 
