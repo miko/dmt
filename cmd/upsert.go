@@ -33,9 +33,23 @@ var upsertCmd = &cobra.Command{
 			return err
 		}
 
-		if strings.HasSuffix(from, ".rdf") {
+		switch {
+		case strings.HasSuffix(from, ".rdf"):
 			err = internal.ProcessFile(from, "mutation.rdf")
-		} else {
+			break
+		case strings.HasSuffix(from, "schema.dql"):
+			err = internal.ProcessFile(from, "schema.dql")
+			break
+		case strings.HasSuffix(from, "schema.graphql"):
+			err = internal.ProcessFile(from, "schema.graphql")
+			break
+		case strings.HasSuffix(from, ".graphql"):
+			err = internal.ProcessFile(from, "data.graphql")
+			break
+		case strings.HasSuffix(from, ".json"):
+			err = internal.ProcessFile(from, "mutation.json")
+			break
+		default:
 			err = fmt.Errorf("*.rfd file supported, %s given", from)
 		}
 		return err

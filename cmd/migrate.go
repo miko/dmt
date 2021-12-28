@@ -47,7 +47,7 @@ var migrateCmd = &cobra.Command{
 			return err
 		}
 
-		if viper.GetString("export_url") != "" {
+		if viper.GetString("export_url") != "" && viper.GetString("export_url") != "none" {
 			if data2.CurrentVersion > 0 {
 				if vrb {
 					fmt.Printf("[warn] Exporting all data to %s before migration - version was at %d\n", viper.GetString("export_url"), data2.CurrentVersion)

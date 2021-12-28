@@ -117,6 +117,6 @@ var infoCmd = &cobra.Command{
 		} else {
 			infoShowDatabaseInfo(data, data2)
 		}
-		return nil
+		return err
 	},
 }
