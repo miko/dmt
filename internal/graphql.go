@@ -104,7 +104,11 @@ func UploadGraphqlSchema(url string) error {
 		fmt.Println("Uploaded schema")
 		return nil
 	} else {
-		return errors.New("Cannot upload schema, error: %v" + err)
+    msg:="none"
+    if err!=nil {
+      msg=err.Error()
+    }
+		return errors.New("Cannot upload schema, error: " + msg)
 	}
 }
 
