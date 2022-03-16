@@ -1,7 +1,7 @@
 FROM golang:alpine AS builder
 RUN apk add git
-ARG TAG=v0.2.16
-RUN GO111MODULE=on go get -v github.com/miko/dmt@${TAG}
+ARG TAG=v0.2.17
+RUN GOPRIVATE=github.com/miko/dmt GO111MODULE=on go get -v github.com/miko/dmt@${TAG}
 
 FROM alpine
 ENTRYPOINT /bin/dmt
