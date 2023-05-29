@@ -392,7 +392,16 @@ func UpVersion(targetVersion int, se StateEntry) (err error) {
 			fmt.Println(err)
 			return
 		}
-
+		ds, err := GetDatabaseState()
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if ds.CurrentVersion != targetVersion {
+			err = fmt.Errorf("Expected version %d after write, got %d\n", targetVersion, ds.CurrentVersion)
+			fmt.Println(err.Error())
+			return err
+		}
 		fmt.Printf("Updated database to version %d\n", targetVersion)
 	}
 	return

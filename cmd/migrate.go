@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/miko/dmt/internal"
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 var (
 	from        int
 	to          int
+	wait        time.Duration
 	successFile string
 	header      string
 	forceDrop   bool
@@ -20,6 +22,7 @@ var (
 func init() {
 	migrateCmd.Flags().IntVarP(&from, "from", "f", 0, "From target")
 	migrateCmd.Flags().IntVarP(&to, "to", "t", 0, "To target")
+	migrateCmd.Flags().DurationVarP(&wait, "wait", "w", time.Millisecond*100, "Wait between steps")
 	migrateCmd.Flags().StringVarP(&successFile, "file", "s", "", "Touch this file in case of successful migration")
 	migrateCmd.Flags().BoolVarP(&forceDrop, "force-drop", "x", false, "Force drop all database data before migration")
 	rootCmd.AddCommand(migrateCmd)
@@ -139,6 +142,9 @@ var migrateCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("Cannot migrate: %s\n", err)
 				return fmt.Errorf("Cannot migrate: %s\n", err)
+			} else {
+				fmt.Printf("Migrated to %d, sleeping %s...", k, wait.String())
+				time.Sleep(wait)
 			}
 		}
 		if successFile != "" {
