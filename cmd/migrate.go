@@ -138,13 +138,12 @@ var migrateCmd = &cobra.Command{
 			return fmt.Errorf("Cannot migrate to version %d - know about %d versions\n", to, len(data.Entries))
 		}
 		for k := from + 1; k <= to; k++ {
-			err = internal.UpVersion(k, data.Entries[k-1])
+			err = internal.UpVersion(k, data.Entries[k-1], wait)
 			if err != nil {
 				fmt.Printf("Cannot migrate: %s\n", err)
 				return fmt.Errorf("Cannot migrate: %s\n", err)
 			} else {
-				fmt.Printf("Migrated to %d, sleeping %s...", k, wait.String())
-				time.Sleep(wait)
+				fmt.Printf("Migrated to %d", k)
 			}
 		}
 		if successFile != "" {
