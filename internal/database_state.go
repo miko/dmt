@@ -393,7 +393,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 			return
 		}
 		done := false
-		for k := 0; k <= 10; k++ {
+		for k := 0; k <= 100; k++ {
 
 			ds, err := GetDatabaseState()
 			if err != nil {
@@ -412,9 +412,9 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 			}
 		}
 		if done {
-			fmt.Printf("Updated database to version %d\n", targetVersion)
+			fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
 		} else {
-			fmt.Printf("Failed to update database to version %d\n", targetVersion)
+			fmt.Printf("Failed to update database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
 		}
 	}
 	return
