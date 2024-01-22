@@ -372,6 +372,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 	_, err = txn.Do(context.Background(), req)
 	if err != nil {
 		fmt.Println(err)
+		panic(err)
 		return
 	} else {
 		dir, _ := SplitIndex(ds.IndexLocation)
@@ -390,10 +391,13 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 		err = txn.Commit(context.Background())
 		if err != nil {
 			fmt.Println(err)
+			panic(err)
 			return
+		} else {
+			fmt.Printf("Commited version %d to DB without error\n", targetVersion)
 		}
 		done := false
-		for k := 0; k <= 20; k++ {
+		for k := 0; k <= 10; k++ {
 
 			ds, err = GetDatabaseState()
 			if err != nil {
@@ -401,9 +405,10 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 				return err
 			}
 			if ds.CurrentVersion != targetVersion {
-				err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, wait.String())
+				d := wait * time.Duration(k)
+				err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, d)
 				fmt.Println(err.Error())
-				time.Sleep(time.Second * time.Duration(k))
+				time.Sleep(d)
 				//return err
 			} else {
 				done = true
