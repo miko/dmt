@@ -393,7 +393,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 			return
 		}
 		done := false
-		for k := 0; k <= 100; k++ {
+		for k := 0; k <= 20; k++ {
 
 			ds, err := GetDatabaseState()
 			if err != nil {
@@ -403,7 +403,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 			if ds.CurrentVersion != targetVersion {
 				err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, wait.String())
 				fmt.Println(err.Error())
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * time.Duration(k))
 				//return err
 			} else {
 				done = true
