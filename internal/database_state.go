@@ -90,6 +90,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	resp, err = dg.NewTxn().Query(context.Background(), GET_STATE_QUERY)
 	if err != nil {
 		//		log.Fatal(err)
+		fmt.Printf(err.Error())
 		return
 	}
 	//fmt.Printf("[debug] JSON response: %s\n", string(resp.Json))
@@ -101,6 +102,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	}
 	err = json.Unmarshal(resp.Json, &rs)
 	if err != nil {
+		fmt.Printf(err.Error())
 		return
 	}
 	if len(rs.GetState) > 0 {
@@ -108,10 +110,12 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 		decoded, err = base64.StdEncoding.DecodeString(rs.GetState[0].State)
 		err = json.Unmarshal(decoded, &ds)
 		if err != nil {
+			fmt.Printf(err.Error())
 			return ds, err
 		}
 		if ds.CurrentVersion != rs.GetState[0].Version {
 			err = fmt.Errorf("State version %d does not match %d\n", ds.CurrentVersion, rs.GetState[0].Version)
+			fmt.Printf(err.Error())
 			return
 		}
 	} else {
@@ -397,7 +401,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 			fmt.Printf("Commited version %d to DB without error\n", targetVersion)
 		}
 		done := false
-		for k := 0; k <= 10; k++ {
+		for k := 0; k <= 15; k++ {
 
 			ds, err = GetDatabaseState()
 			if err != nil {
