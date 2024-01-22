@@ -343,6 +343,7 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 		return err
 	}
 	ds.Entries = append(ds.Entries, se)
+	fmt.Printf("Prev version: %d\n", ds.CurrentVersion)
 	ds.CurrentVersion = targetVersion
 
 	dg, cancel := NewClient()
@@ -370,6 +371,19 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 		Query:     qry,
 		Mutations: mts,
 	}
+	dir, _ := SplitIndex(ds.IndexLocation)
+	if fdir := viper.GetString("index"); fdir != "" {
+		dir, _ = SplitIndex(fdir)
+	}
+	if verbose {
+		fmt.Printf("[info] dir set to %s\n", dir)
+	}
+	err = ProcessFile(dir+"/"+se.Filename, se.Type)
+	if err != nil {
+		fmt.Print(err)
+		return err
+	}
+
 	txn := dg.NewTxn()
 	defer txn.Discard(context.Background())
 
@@ -378,19 +392,6 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 		fmt.Println(err)
 		panic(err)
 		return
-	} else {
-		dir, _ := SplitIndex(ds.IndexLocation)
-		if fdir := viper.GetString("index"); fdir != "" {
-			dir, _ = SplitIndex(fdir)
-		}
-		if verbose {
-			fmt.Printf("[info] dir set to %s\n", dir)
-		}
-		err = ProcessFile(dir+"/"+se.Filename, se.Type)
-		if err != nil {
-			fmt.Print(err)
-			return err
-		}
 
 		err = txn.Commit(context.Background())
 		if err != nil {
