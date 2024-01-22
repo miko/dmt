@@ -402,7 +402,6 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 		}
 		done := false
 		for k := 0; k <= 15; k++ {
-
 			ds, err = GetDatabaseState()
 			if err != nil {
 				fmt.Println(err)
