@@ -143,8 +143,8 @@ var migrateCmd = &cobra.Command{
 				fmt.Printf("Cannot migrate: %s\n", err)
 				return fmt.Errorf("Cannot migrate: %s\n", err)
 			} else {
-        fmt.Printf("Migrated to %d, waiting: %s", k, wait)
-        time.Sleep(wait)
+				fmt.Printf("Migrated to %d, waiting: %s", k, wait)
+				time.Sleep(wait)
 			}
 		}
 		if successFile != "" {
@@ -155,6 +155,8 @@ var migrateCmd = &cobra.Command{
 			}
 			f.Close()
 		}
+		fmt.Println("DONE!")
+		time.Sleep(wait)
 		return nil
 	},
 }

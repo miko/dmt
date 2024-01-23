@@ -386,46 +386,48 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 
 	txn := dg.NewTxn()
 	defer txn.Discard(context.Background())
-
-	_, err = txn.Do(context.Background(), req)
+	var resp *api.Response
+	resp, err = txn.Do(context.Background(), req)
 	if err != nil {
 		fmt.Println(err)
-		panic(err)
+		//panic(err)
 		return
+	} else {
+		fmt.Printf("  Got response: %s\n", string(resp.GetJson()))
+	}
 
-		err = txn.Commit(context.Background())
+	err = txn.Commit(context.Background())
+	if err != nil {
+		fmt.Println(err)
+		//panic(err)
+		return
+	} else {
+		fmt.Printf("Commited version %d to DB without error\n", targetVersion)
+	}
+	done := false
+	for k := 0; k <= 15; k++ {
+		ds, err = GetDatabaseState()
 		if err != nil {
 			fmt.Println(err)
-			panic(err)
-			return
+			return err
+		}
+		if ds.CurrentVersion != targetVersion {
+			d := wait * time.Duration(k)
+			err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, d)
+			fmt.Println(err.Error())
+			time.Sleep(d)
+			//return err
 		} else {
-			fmt.Printf("Commited version %d to DB without error\n", targetVersion)
+			done = true
+			err = nil
+			fmt.Printf("Got correct version: %d\n", targetVersion)
+			break
 		}
-		done := false
-		for k := 0; k <= 15; k++ {
-			ds, err = GetDatabaseState()
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			if ds.CurrentVersion != targetVersion {
-				d := wait * time.Duration(k)
-				err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, d)
-				fmt.Println(err.Error())
-				time.Sleep(d)
-				//return err
-			} else {
-				done = true
-				err = nil
-				fmt.Printf("Got correct version: %d\n", targetVersion)
-				break
-			}
-		}
-		if done {
-			fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
-		} else {
-			fmt.Printf("Failed to update database to version %d [elapsed: %s] error is: %s\n", targetVersion, time.Now().Sub(now), err.Error())
-		}
+	}
+	if done {
+		fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
+	} else {
+		fmt.Printf("Failed to update database to version %d [elapsed: %s] error is: %s\n", targetVersion, time.Now().Sub(now), err.Error())
 	}
 	return
 }
