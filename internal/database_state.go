@@ -330,6 +330,50 @@ func ProcessFile(filename, filetype string) (err error) {
 	return
 }
 
+func upVersionCommit(dg *dgo.Dgraph, req *api.Request) error {
+	txn := dg.NewTxn()
+	defer txn.Discard(context.Background())
+	resp, err := txn.Do(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Printf("  Got response: %s\n", string(resp.GetJson()))
+	err = txn.Commit(context.Background())
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Printf("Commited version to DB without error\n")
+	return nil
+}
+
+func upVersionVerify(targetVersion int, wait time.Duration) error {
+	done := false
+	for k := 0; k <= 15; k++ {
+		ds, err := GetDatabaseState()
+		if err != nil {
+			d := wait * time.Duration(k)
+			fmt.Printf("State read error, step %d, sleeping %s: %s\n", k, d, err)
+			time.Sleep(d)
+			continue
+		}
+		if ds.CurrentVersion != targetVersion {
+			d := wait * time.Duration(k)
+			fmt.Printf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, d)
+			time.Sleep(d)
+		} else {
+			done = true
+			fmt.Printf("Got correct version: %d\n", targetVersion)
+			break
+		}
+	}
+	if !done {
+		return fmt.Errorf("Failed to update database to version %d", targetVersion)
+	}
+	return nil
+}
+
 func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error) {
 	now := time.Now()
 	verbose := viper.GetBool("verbose")
@@ -378,57 +422,45 @@ func UpVersion(targetVersion int, se StateEntry, wait time.Duration) (err error)
 	if verbose {
 		fmt.Printf("[info] dir set to %s\n", dir)
 	}
+
+	// For schema.graphql the /admin/schema HTTP call can interfere with the
+	// gRPC conditional mutation. Apply the version bump first, then upload the
+	// schema content.
+	if se.Type == "schema.graphql" {
+		err = upVersionCommit(dg, req)
+		if err != nil {
+			return err
+		}
+		err = ProcessFile(dir+"/"+se.Filename, se.Type)
+		if err != nil {
+			fmt.Print(err)
+			return err
+		}
+		err = upVersionVerify(targetVersion, wait)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
+		return nil
+	}
+
 	err = ProcessFile(dir+"/"+se.Filename, se.Type)
 	if err != nil {
 		fmt.Print(err)
 		return err
 	}
 
-	txn := dg.NewTxn()
-	defer txn.Discard(context.Background())
-	var resp *api.Response
-	resp, err = txn.Do(context.Background(), req)
+	err = upVersionCommit(dg, req)
+	if err != nil {
+		return err
+	}
+	err = upVersionVerify(targetVersion, wait)
 	if err != nil {
 		fmt.Println(err)
-		//panic(err)
-		return
-	} else {
-		fmt.Printf("  Got response: %s\n", string(resp.GetJson()))
+		return err
 	}
-
-	err = txn.Commit(context.Background())
-	if err != nil {
-		fmt.Println(err)
-		//panic(err)
-		return
-	} else {
-		fmt.Printf("Commited version %d to DB without error\n", targetVersion)
-	}
-	done := false
-	for k := 0; k <= 15; k++ {
-		ds, err = GetDatabaseState()
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		if ds.CurrentVersion != targetVersion {
-			d := wait * time.Duration(k)
-			err = fmt.Errorf("Expected version %d after write, got %d, step %d, sleeping %s\n", targetVersion, ds.CurrentVersion, k, d)
-			fmt.Println(err.Error())
-			time.Sleep(d)
-			//return err
-		} else {
-			done = true
-			err = nil
-			fmt.Printf("Got correct version: %d\n", targetVersion)
-			break
-		}
-	}
-	if done {
-		fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
-	} else {
-		fmt.Printf("Failed to update database to version %d [elapsed: %s] error is: %s\n", targetVersion, time.Now().Sub(now), err.Error())
-	}
+	fmt.Printf("Updated database to version %d [elapsed: %s]\n", targetVersion, time.Now().Sub(now))
 	return
 }
 
