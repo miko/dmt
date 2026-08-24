@@ -16,14 +16,30 @@ func BuildIndex(dir string) error {
 	}
 
 	var is IndexState
-	indexFile := "_dmt.json"
-	if dir != "" && dir != "." {
-		indexFile = dir + "/" + indexFile
-	}
-	is.IndexFile = indexFile
+	// One path, computed once. It used to be built twice -- `indexFile` already
+	// carried `dir`, and the write then did `dir + "/" + indexFile` -- so any
+	// invocation other than `dmt build .` from inside the directory wrote to a
+	// doubled path and silently did nothing.
+	indexPath := filepath.Join(dir, "_dmt.json")
+	is.IndexFile = indexPath
 	now := time.Now()
-	_ = now
 	version := 0
+
+	// Previous index, read best-effort: an unchanged entry keeps the date it
+	// already had. The index is derived -- only filesum/chainsum carry meaning,
+	// and Date is read nowhere but `dmt info` -- so re-stamping every entry on
+	// every build is pure churn. On a 2250-entry index it turned a one-file edit
+	// into a ~650-line diff and made two branches that both ran `build` conflict
+	// on nearly every line.
+	previous := map[string]StateEntry{}
+	if raw, err := ioutil.ReadFile(indexPath); err == nil {
+		var oldEntries []StateEntry
+		if json.Unmarshal(raw, &oldEntries) == nil {
+			for _, e := range oldEntries {
+				previous[e.Filename] = e
+			}
+		}
+	}
 
 	var lastmd5 string
 
@@ -59,9 +75,14 @@ func BuildIndex(dir string) error {
 			var sum string
 			if sum, err = GetMD5(dir + "/" + fname); err == nil {
 				chainsum := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d-%s-%s", version, lastmd5, sum))))
+				date := &now
+				if prev, ok := previous[fname]; ok &&
+					prev.MD5SUM == sum && prev.ChainSum == chainsum && prev.Date != nil {
+					date = prev.Date
+				}
 				en := &StateEntry{
 					Filename: fname,
-					Date:     &now,
+					Date:     date,
 					Type:     ftype,
 					ChainSum: chainsum,
 					MD5SUM:   sum,
@@ -78,5 +99,5 @@ func BuildIndex(dir string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dir+"/"+indexFile, data, 0644)
+	return ioutil.WriteFile(indexPath, data, 0644)
 }
