@@ -13,10 +13,11 @@ import (
 	//"path/filepath"
 	"time"
 
-	"github.com/dgraph-io/dgo/v200"
-	"github.com/dgraph-io/dgo/v200/protos/api"
+	"github.com/dgraph-io/dgo/v250"
+	"github.com/dgraph-io/dgo/v250/protos/api"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type CancelFunc func()
@@ -56,7 +57,7 @@ func NewClient() (*dgo.Dgraph, CancelFunc) {
 	if verbose {
 		fmt.Printf("[info] Connecting to dgraph %s\n", addr)
 	}
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +91,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	resp, err = dg.NewTxn().Query(context.Background(), GET_STATE_QUERY)
 	if err != nil {
 		//		log.Fatal(err)
-		fmt.Printf(err.Error())
+		fmt.Print(err.Error())
 		return
 	}
 	//fmt.Printf("[debug] JSON response: %s\n", string(resp.Json))
@@ -102,7 +103,7 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 	}
 	err = json.Unmarshal(resp.Json, &rs)
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Print(err.Error())
 		return
 	}
 	if len(rs.GetState) > 0 {
@@ -110,12 +111,12 @@ func GetDatabaseStateForClient(dg *dgo.Dgraph) (ds DatabaseState, err error) {
 		decoded, err = base64.StdEncoding.DecodeString(rs.GetState[0].State)
 		err = json.Unmarshal(decoded, &ds)
 		if err != nil {
-			fmt.Printf(err.Error())
+			fmt.Print(err.Error())
 			return ds, err
 		}
 		if ds.CurrentVersion != rs.GetState[0].Version {
 			err = fmt.Errorf("State version %d does not match %d\n", ds.CurrentVersion, rs.GetState[0].Version)
-			fmt.Printf(err.Error())
+			fmt.Print(err.Error())
 			return
 		}
 	} else {
@@ -284,7 +285,7 @@ func ProcessFile(filename, filetype string) (err error) {
 					Processed []struct {
 						Count int `json:"count"`
 					} `json:"processed"`
-				} `json:"queries`
+				} `json:"queries"`
 			} `json:"data"`
 		}
 		var done bool
@@ -520,7 +521,7 @@ mutation {
 		fmt.Println("[info] Server response status:", resp.Status)
 	}
 	if resp.Status != "200 OK" {
-		return nil, fmt.Errorf("Server returned status %d", resp.Status)
+		return nil, fmt.Errorf("Server returned status %s", resp.Status)
 	}
 
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -564,7 +565,7 @@ func UploadUpsertData(content, contenttype string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.Status != "200 OK" {
-		return nil, fmt.Errorf("Server returned status %d", resp.Status)
+		return nil, fmt.Errorf("Server returned status %s", resp.Status)
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	if verbose {

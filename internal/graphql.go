@@ -96,7 +96,7 @@ func UploadGraphqlSchema(url string) error {
 			break
 		} else {
 			if verbose {
-				fmt.Printf("[error] [step=%d] error=%s from server:\n%s\n", count, r.Errors[0].Message)
+				fmt.Printf("[error] [step=%d] error=%s from server:\n%s\n", count, r.Errors[0].Message, buf)
 			}
 		}
 	}
@@ -104,10 +104,10 @@ func UploadGraphqlSchema(url string) error {
 		fmt.Println("Uploaded schema")
 		return nil
 	} else {
-    msg:="none"
-    if err!=nil {
-      msg=err.Error()
-    }
+		msg := "none"
+		if err != nil {
+			msg = err.Error()
+		}
 		return errors.New("Cannot upload schema, error: " + msg)
 	}
 }
